@@ -35,9 +35,6 @@ class DummyTCPHandler(BaseRequestHandler):
         except Exception as e:
             print(e)
 
-        self.request.sendall(bytes("Ok", "ascii"))
-        self.request.
-
 
 parser = argparse.ArgumentParser(
     prog="stub", description="Simulate a simple stateful EV charger."
