@@ -37,5 +37,9 @@ parser.add_argument("--my_addr", type=ip_address, required=True, help="my addres
 parser.add_argument("--my_port", type=int, default=12345, help="my port")
 args = parser.parse_args()
 
-with TCPServer((str(args.my_addr), args.my_port), DummyTCPHandler) as server:
+server = TCPServer((str(args.my_addr), args.my_port), DummyTCPHandler)
+
+try:
     server.serve_forever()
+except KeyboardInterrupt:
+    server.shutdown()
