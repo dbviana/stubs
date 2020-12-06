@@ -7,6 +7,7 @@ For testing stub
 
 import argparse
 from ipaddress import ip_address
+import socket
 from socketserver import TCPServer, BaseRequestHandler
 
 
@@ -36,6 +37,13 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--my_addr", type=ip_address, required=True, help="my address")
 parser.add_argument("--my_port", type=int, default=12345, help="my port")
 args = parser.parse_args()
+
+
+class MyTCPServer(TCPServer):
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(self.server_address)
+
 
 server = TCPServer((str(args.my_addr), args.my_port), DummyTCPHandler)
 
