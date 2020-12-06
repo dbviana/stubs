@@ -45,7 +45,7 @@ class MyTCPServer(TCPServer):
         self.socket.bind(self.server_address)
 
 
-server = TCPServer((str(args.my_addr), args.my_port), DummyTCPHandler)
+server = MyTCPServer((str(args.my_addr), args.my_port), DummyTCPHandler)
 
 try:
     server.serve_forever()
