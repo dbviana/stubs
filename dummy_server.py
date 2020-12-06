@@ -8,6 +8,7 @@ For testing stub
 import argparse
 from ipaddress import ip_address
 import socket
+import struct
 from socketserver import TCPServer, BaseRequestHandler
 
 
@@ -24,11 +25,18 @@ class DummyTCPHandler(BaseRequestHandler):
     """
 
     def handle(self):
-        self.data = self.request.recv(1024).strip()
+        self.unpacker = struct.Struct("I f")
+        self.data = self.request.recv(self.unpacker.size)
         print("{} wrote:".format(self.client_address[1]))
-        print(self.data)
-        print(self.request)
-        self.request.sendall(bytes("heyo!", "ascii"))
+
+        try:
+            info = self.unpacker.unpack(self.data)
+            print(info)
+        except Exception as e:
+            print(e)
+
+        self.request.sendall(bytes("Ok", "ascii"))
+        self.request.
 
 
 parser = argparse.ArgumentParser(
