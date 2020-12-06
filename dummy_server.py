@@ -4,9 +4,16 @@ dummy_server
 For testing stub
 """
 
+
 import argparse
-from socketserver import TCPServer, BaseRequestHandler
 from ipaddress import ip_address
+from socketserver import TCPServer, BaseRequestHandler
+
+
+class Stub:
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
 
 
 class DummyTCPHandler(BaseRequestHandler):
@@ -17,8 +24,10 @@ class DummyTCPHandler(BaseRequestHandler):
 
     def handle(self):
         self.data = self.request.recv(1024).strip()
-        print("{} wrote:".format(self.client_address[0]))
+        print("{} wrote:".format(self.client_address[1]))
         print(self.data)
+        print(self.request)
+        self.request.sendall(bytes("heyo!", "ascii"))
 
 
 parser = argparse.ArgumentParser(
