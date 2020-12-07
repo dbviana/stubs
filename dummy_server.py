@@ -62,8 +62,10 @@ args = parser.parse_args()
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.settimeout(1)
-sock.bind((str(args.my_addr), args.my_port))
-# sock.bind((socket.get_hostname(), args.my_port))
+
+bind_args = (str(args.my_addr), args.my_port)
+sock.bind(bind_args)
+print(bind_args)
 
 sock.listen(5)
 
