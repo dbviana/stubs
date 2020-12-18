@@ -10,6 +10,9 @@ from ipaddress import ip_address
 import socket
 import struct
 import threading
+import json
+
+import common
 
 
 class ClientThread(threading.Thread):
@@ -24,26 +27,29 @@ class ClientThread(threading.Thread):
         self.client_port = _port
         print("[+] New connection: {} {}".format(self.client_ip, self.client_port))
 
-        self.unpacker = struct.Struct("I f f")
+        self.unpacker = struct.Struct("!I")
         self.exit = False
+
+    def interpret_message(self, json_msg):
+        if json_msg["newConnection"]:
+            print(
+                "[!] {}:{} wants to start charging!".format(
+                    self.client_ip, self.client_port
+                )
+            )
+
+            json_msg["chargingMode"] = 1
+            json_msg["maxPower"] = 60
+
+            common._send_json_message(self.sock, json_msg)
 
     def run(self):
         while not self.exit:
-            data = self.sock.recv(self.unpacker.size)
-            # print("Recv data: {}".format(data))
-            if len(data) == 0:
-                # Connection terminated
-                print(
-                    "[-] Connection terminated: {} {}".format(
-                        self.client_ip, self.client_port
-                    )
-                )
+            json_msg = common._receive_json_message(self.sock)
+            if json_msg is None:
                 break
 
-            info = self.unpacker.unpack(data)
-            for val in info:
-                print("{:.2f} ".format(val), end="")
-            print("")
+            self.interpret_message(json_msg)
 
         print("[X] Closing socket: {} {}".format(self.client_ip, self.client_port))
         self.sock.shutdown(socket.SHUT_RDWR)

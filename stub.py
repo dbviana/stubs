@@ -10,6 +10,10 @@ from ipaddress import ip_address
 import socket
 import struct
 import time
+import json
+import datetime
+
+import common
 
 
 parser = argparse.ArgumentParser(
@@ -81,14 +85,12 @@ class Stub:
     """
 
     def __init__(self, ID, battery=default_battery):
-        self.identifier = ID
+        self.identifier = str(datetime.datetime.now().year) + str(ID).zfill(2)
         self.battery = battery
 
         self.charging = False
         self.power_intake = None
         self.available_power = None
-
-        self.packer = struct.Struct("I f f")
 
         self._init_socket()
 
@@ -123,22 +125,49 @@ class Stub:
         if self.battery.perc == 1.0:
             self.charging = 0
 
-    def inform_server(self):
-        """
-        Informs the server of the stub's
-        current status
-        """
-        values = (self.identifier, self.power_intake, self.battery.perc * 100)
-        packed_data = self.packer.pack(*values)
+    def say_hello_to_server(self):
+        base_packet = {
+            "chargerID": self.identifier,
+            "stateOcupation": 1,
+            "newConnection": 1,
+            "chargingMode": 0,  # TODO: Add fast charging mode
+            "voltageMode": 0,  # TODO: Add AC charging
+            "instPower": 0,
+            "maxPower": 0,
+            "voltage": 400,
+        }
+        common._send_json_message(self.sock, base_packet)
 
-        # print("Sending packet... (identifier:{}, {:.2f}kWh, {:.2f}%)".format(*values))
-        self.sock.send(packed_data)
+    def send_charge_data(self):
+        json_data = {
+            "chargerID": self.identifier,
+            "stateOcupation": 1,
+            "newConnection": 0,
+            "chargingMode": 0,  # TODO: Add fast charging mode
+            "voltageMode": 0,  # TODO: Add AC charging
+            "instPower": self.power_intake,
+            "maxPower": self.available_power,
+            "voltage": 400,
+        }
+        common._send_json_message(self.sock, json_data)
 
     def disconnect(self):
         """
         Disconnects from the server and
         cleans up
         """
+        json_data = {
+            "chargerID": self.identifier,
+            "stateOcupation": 0,
+            "newConnection": 0,
+            "chargingMode": 0,  # TODO: Add fast charging mode
+            "voltageMode": 0,  # TODO: Add AC charging
+            "instPower": 0,
+            "maxPower": 0,
+            "voltage": 400,
+        }
+        common._send_json_message(self.sock, json_data)
+
         self.sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
 
@@ -154,19 +183,28 @@ class Stub:
         )
 
 
-stub0 = Stub(0)
+stub0 = Stub(12)
 
-stub0.start_charging_at(100)
+# stub0.start_charging_at(100)
 
 TIME_SPEED = 100
 TIME_SLEEP = 1
 TIME_ELAPSED = 0
 
+while not stub0.charging:
+    stub0.say_hello_to_server()
+    json_msg = common._receive_json_message(stub0.sock)
+
+    if json_msg["chargingMode"] == 1:
+        stub0.start_charging_at(json_msg["maxPower"])
+        break
+
+
 while True:
     print(stub0)
 
     try:
-        stub0.inform_server()
+        stub0.send_charge_data()
     except ConnectionAbortedError:
         print("[!] Server must be down: exiting!")
         break
@@ -178,6 +216,5 @@ while True:
 
     if TIME_ELAPSED > 10:
         break
-
 
 stub0.disconnect()
