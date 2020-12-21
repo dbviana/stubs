@@ -247,10 +247,10 @@ class Stub:
 
 stub0 = Stub(args.id)
 
-TIME_SPEED = 100
+TIME_SPEED = 30
 TIME_SLEEP = 1
 TIME_ELAPSED = 0
-TIME_UNTIL_DISCONNECT = 10
+TIME_UNTIL_DISCONNECT = 60
 
 while True:
     try:
