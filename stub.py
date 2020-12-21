@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--server_addr", type=ip_address, required=True, help="server address"
 )
-parser.add_argument("--server_port", type=ip_address, default=12345, help="server port")
+parser.add_argument("--server_port", type=ip_address, default=5050, help="server port")
 args = parser.parse_args()
 
 print(args.server_addr)
@@ -255,7 +255,7 @@ while True:
     try:
         # Introduce myself and await
         stub0.say_hello_to_server()
-        json_msg = common.receive_json_message(stub0.sock, timeout=0.5)
+        json_msg = common.receive_json_message(stub0.sock, timeout=20)
 
         if json_msg["chargingMode"] != 2:
             stub0.start_charging_at(json_msg["maxPower"], json_msg["chargingMode"])

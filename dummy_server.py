@@ -104,7 +104,7 @@ parser = argparse.ArgumentParser(
     description="Dummy server for testing the simulation of a simple EV charger.",
 )
 parser.add_argument("--my_addr", type=ip_address, required=True, help="my address")
-parser.add_argument("--my_port", type=int, default=12345, help="my port")
+parser.add_argument("--my_port", type=int, default=5050, help="my port")
 args = parser.parse_args()
 
 
