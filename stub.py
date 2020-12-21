@@ -130,6 +130,7 @@ class Stub:
 
     def say_hello_to_server(self):
         base_packet = {
+            "module": "stub",
             "chargerID": self.identifier,
             "stateOcupation": 1,
             "newConnection": 1,
@@ -165,6 +166,7 @@ class Stub:
             charging_mode = 0
 
         _json_data = {
+            "module": "stub",
             "chargerID": self.identifier,
             "stateOcupation": 1,
             "newConnection": 0,
@@ -189,6 +191,7 @@ class Stub:
         stopped due to a full battery
         """
         json_data = {
+            "module": "stub",
             "chargerID": self.identifier,
             "stateOcupation": 1,
             "newConnection": 0,
@@ -206,6 +209,7 @@ class Stub:
         stopped due to a manual disconnect
         """
         json_data = {
+            "module": "stub",
             "chargerID": self.identifier,
             "stateOcupation": 0,
             "newConnection": 0,
