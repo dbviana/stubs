@@ -8,9 +8,7 @@ Simulate a simple stateful EV charger
 import argparse
 from ipaddress import ip_address
 import socket
-import struct
 import time
-import json
 import datetime
 
 import common
@@ -106,6 +104,11 @@ class Stub:
         self.available_power = available_power
         self.calculate_power_intake()
 
+    def stop_charging(self):
+        self.charging = False
+        self.available_power = 0
+        self.calculate_power_intake()
+
     def calculate_power_intake(self):
         """
         Calculates power intake given the current
@@ -130,44 +133,96 @@ class Stub:
             "chargerID": self.identifier,
             "stateOcupation": 1,
             "newConnection": 1,
-            "chargingMode": 0,  # TODO: Add fast charging mode
+            "chargingMode": 2,  # Not charging, TODO: Add fast charging mode
             "voltageMode": 0,  # TODO: Add AC charging
             "instPower": 0,
             "maxPower": 0,
             "voltage": 400,
         }
-        common._send_json_message(self.sock, base_packet)
+        common.send_json_message(self.sock, base_packet)
+
+    def interpret_message(self, _json_msg):
+        if _json_msg["chargerID"] != self.identifier:
+            print(
+                "[!] Is this packet for us? I'm not Stub no. {}, I'm no. {}. Ignoring.".format(
+                    _json_msg["chargerID"], self.identifier
+                )
+            )
+            return
+
+        if _json_msg["chargingMode"] == 0:  # TODO: Might be 0
+            self.start_charging_at(_json_msg["maxPower"])
+
+        # TODO: Handle fast charging
+
+        if _json_msg["chargingMode"] == 2:  # Stop charging
+            if self.charging:
+                self.stop_charging()
 
     def send_charge_data(self):
-        json_data = {
+        charging_mode = 2
+        if self.charging:
+            charging_mode = 0
+
+        _json_data = {
             "chargerID": self.identifier,
             "stateOcupation": 1,
             "newConnection": 0,
-            "chargingMode": 0,  # TODO: Add fast charging mode
+            "chargingMode": charging_mode,  # 0 = Normal Speed # TODO: Add fast charging mode
             "voltageMode": 0,  # TODO: Add AC charging
             "instPower": self.power_intake,
             "maxPower": self.available_power,
             "voltage": 400,
         }
-        common._send_json_message(self.sock, json_data)
+        # print("Sent message {}".format(_json_data))
+        common.send_json_message(self.sock, _json_data)
+
+        try:
+            _json_data = common.receive_json_message(self.sock, timeout=1)
+            self.interpret_message(_json_data)
+        except TimeoutError:
+            print("[!] Server may be down? It's not replying.")
+
+    def stop_charging_battery_full(self):
+        """
+        Inform server that charging has
+        stopped due to a full battery
+        """
+        json_data = {
+            "chargerID": self.identifier,
+            "stateOcupation": 1,
+            "newConnection": 0,
+            "chargingMode": 2,  # Off
+            "voltageMode": 0,  # Assume DC TODO: Don't
+            "instPower": 0,
+            "maxPower": 0,
+            "voltage": 400,
+        }
+        common.send_json_message(self.sock, json_data)
 
     def disconnect(self):
         """
-        Disconnects from the server and
-        cleans up
+        Inform server that charging has
+        stopped due to a manual disconnect
         """
         json_data = {
             "chargerID": self.identifier,
             "stateOcupation": 0,
             "newConnection": 0,
-            "chargingMode": 0,  # TODO: Add fast charging mode
-            "voltageMode": 0,  # TODO: Add AC charging
+            "chargingMode": 2,  # Off
+            "voltageMode": 0,  # Assume DC TODO: Don't
             "instPower": 0,
             "maxPower": 0,
             "voltage": 400,
         }
-        common._send_json_message(self.sock, json_data)
+        common.send_json_message(self.sock, json_data)
 
+        self.raw_disconnect()
+
+    def raw_disconnect(self):
+        """
+        Disconnects from the server
+        """
         self.sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
 
@@ -185,28 +240,37 @@ class Stub:
 
 stub0 = Stub(12)
 
-# stub0.start_charging_at(100)
-
 TIME_SPEED = 100
 TIME_SLEEP = 1
 TIME_ELAPSED = 0
+TIME_UNTIL_DISCONNECT = 10
 
-while not stub0.charging:
-    stub0.say_hello_to_server()
-    json_msg = common._receive_json_message(stub0.sock)
+while True:
+    try:
+        # Introduce myself and await
+        stub0.say_hello_to_server()
+        json_msg = common.receive_json_message(stub0.sock, timeout=0.5)
 
-    if json_msg["chargingMode"] == 1:
-        stub0.start_charging_at(json_msg["maxPower"])
-        break
+        if json_msg["chargingMode"] == 0:
+            stub0.start_charging_at(json_msg["maxPower"])
+            break
 
+    except TimeoutError:
+        continue
+
+# Finished introducing myself,
+# onto normal operation
 
 while True:
     print(stub0)
 
+    # Simulation loop
+
     try:
         stub0.send_charge_data()
-    except ConnectionAbortedError:
-        print("[!] Server must be down: exiting!")
+    except Exception as e:
+        print("[!] Server must be down: exiting!", e)
+        stub0.raw_disconnect()
         break
 
     time.sleep(TIME_SLEEP)
@@ -214,7 +278,6 @@ while True:
 
     stub0.charge(TIME_SLEEP * TIME_SPEED / 3600)
 
-    if TIME_ELAPSED > 10:
+    if TIME_ELAPSED > TIME_UNTIL_DISCONNECT:
+        stub0.disconnect()
         break
-
-stub0.disconnect()

@@ -10,7 +10,6 @@ from ipaddress import ip_address
 import socket
 import struct
 import threading
-import json
 
 import common
 
@@ -25,31 +24,75 @@ class ClientThread(threading.Thread):
         self.sock = _sock
         self.client_ip = _ip
         self.client_port = _port
+        self.id = None
         print("[+] New connection: {} {}".format(self.client_ip, self.client_port))
 
         self.unpacker = struct.Struct("!I")
         self.exit = False
 
-    def interpret_message(self, json_msg):
-        if json_msg["newConnection"]:
+    def interpret_message(self, _json_msg):
+        if self.id is None:
+            self.id = _json_msg["chargerID"]
+        elif self.id != _json_msg["chargerID"]:
             print(
-                "[!] {}:{} wants to start charging!".format(
-                    self.client_ip, self.client_port
+                "[X] ERROR: Different charger id on the same socket? Shouldn't happen! Got {}, expected {}.",
+                _json_msg["chargerID"],
+                self.id,
+            )
+
+        # Interpreting starts here
+
+        if _json_msg["newConnection"]:
+            print(
+                "[!] {} ({}:{}) wants to start charging!".format(
+                    self.id, self.client_ip, self.client_port
                 )
             )
 
-            json_msg["chargingMode"] = 1
-            json_msg["maxPower"] = 60
+            _json_msg["chargingMode"] = 0
+            _json_msg["maxPower"] = 60
 
-            common._send_json_message(self.sock, json_msg)
+            common.send_json_message(self.sock, _json_msg)
+            print(
+                "[<] Authorizing {} to charging a maximum of {}kWh.".format(
+                    self.id, _json_msg["maxPower"]
+                )
+            )
+            return
+
+        if _json_msg["chargingMode"] == 0:
+            print(
+                "[>] {} is charging at {:.2f}kWh (from the {:.2f}kWh available to it).".format(
+                    self.id, _json_msg["instPower"], _json_msg["maxPower"]
+                )
+            )
+
+            common.send_json_message(self.sock, _json_msg)
+            return
+
+        if _json_msg["chargingMode"] == 2:
+            if _json_msg["stateOcupation"] == 0:
+                print("[!] {} disconnected.".format(self.id))
+            elif _json_msg["stateOcupation"] == 1:
+                print("[!] {} is done charging.".format(self.id))
+                common.send_json_message(self.sock, _json_msg)
+
+            return
+
+        print("[!] Got {}. Message not handled!".format(_json_msg))
 
     def run(self):
         while not self.exit:
-            json_msg = common._receive_json_message(self.sock)
+            # print("Waiting for message...")
+            json_msg = common.receive_json_message(self.sock)
+            # print(json_msg)
             if json_msg is None:
                 break
 
             self.interpret_message(json_msg)
+
+            if json_msg["stateOcupation"] == 0:
+                break
 
         print("[X] Closing socket: {} {}".format(self.client_ip, self.client_port))
         self.sock.shutdown(socket.SHUT_RDWR)
