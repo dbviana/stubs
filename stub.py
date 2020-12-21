@@ -83,10 +83,11 @@ class Stub:
     """
 
     def __init__(self, ID, battery=default_battery):
-        self.identifier = str(datetime.datetime.now().year) + str(ID).zfill(2)
+        self.identifier = int(str(datetime.datetime.now().year) + str(ID).zfill(2))
         self.battery = battery
 
         self.charging = False
+        self.charging_mode = None
         self.power_intake = None
         self.available_power = None
 
@@ -96,11 +97,12 @@ class Stub:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((str(args.server_addr), args.server_port))
 
-    def start_charging_at(self, available_power):
+    def start_charging_at(self, available_power, charging_mode):
         """
         Sets up charging info
         """
         self.charging = True
+        self.charging_mode = charging_mode
         self.available_power = available_power
         self.calculate_power_intake()
 
@@ -152,7 +154,7 @@ class Stub:
             return
 
         if _json_msg["chargingMode"] == 0:  # TODO: Might be 0
-            self.start_charging_at(_json_msg["maxPower"])
+            self.start_charging_at(_json_msg["maxPower"], _json_msg["chargingMode"])
 
         # TODO: Handle fast charging
 
@@ -255,8 +257,8 @@ while True:
         stub0.say_hello_to_server()
         json_msg = common.receive_json_message(stub0.sock, timeout=0.5)
 
-        if json_msg["chargingMode"] == 0:
-            stub0.start_charging_at(json_msg["maxPower"])
+        if json_msg["chargingMode"] != 2:
+            stub0.start_charging_at(json_msg["maxPower"], json_msg["chargingMode"])
             break
 
     except TimeoutError:
