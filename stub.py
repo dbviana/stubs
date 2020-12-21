@@ -17,6 +17,7 @@ import common
 parser = argparse.ArgumentParser(
     prog="stub", description="Simulate a simple EV charger."
 )
+parser.add_argument("--id", type=int, required=True, help="stub id")
 parser.add_argument(
     "--server_addr", type=ip_address, required=True, help="server address"
 )
@@ -244,7 +245,7 @@ class Stub:
         )
 
 
-stub0 = Stub(12)
+stub0 = Stub(args.id)
 
 TIME_SPEED = 100
 TIME_SLEEP = 1
