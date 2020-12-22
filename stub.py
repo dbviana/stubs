@@ -135,7 +135,7 @@ class Stub:
         base_packet = {
             "module": "stub",
             "chargerID": self.identifier,
-            "stateOcupation": 1,
+            "stateOccupation": 0,
             "newConnection": 1,
             "chargingMode": 2,  # Not charging, TODO: Add fast charging mode
             "voltageMode": 0,  # TODO: Add AC charging
@@ -171,7 +171,7 @@ class Stub:
         _json_data = {
             "module": "stub",
             "chargerID": self.identifier,
-            "stateOcupation": 1,
+            "stateOccupation": 1,
             "newConnection": 0,
             "chargingMode": charging_mode,  # 0 = Normal Speed # TODO: Add fast charging mode
             "voltageMode": 0,  # TODO: Add AC charging
@@ -196,7 +196,7 @@ class Stub:
         json_data = {
             "module": "stub",
             "chargerID": self.identifier,
-            "stateOcupation": 1,
+            "stateOccupation": 1,
             "newConnection": 0,
             "chargingMode": 2,  # Off
             "voltageMode": 0,  # Assume DC TODO: Don't
@@ -214,7 +214,7 @@ class Stub:
         json_data = {
             "module": "stub",
             "chargerID": self.identifier,
-            "stateOcupation": 0,
+            "stateOccupation": 0,
             "newConnection": 0,
             "chargingMode": 2,  # Off
             "voltageMode": 0,  # Assume DC TODO: Don't

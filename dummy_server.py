@@ -71,9 +71,9 @@ class ClientThread(threading.Thread):
             return
 
         if _json_msg["chargingMode"] == 2:
-            if _json_msg["stateOcupation"] == 0:
+            if _json_msg["stateOccupation"] == 0:
                 print("[!] {} disconnected.".format(self.id))
-            elif _json_msg["stateOcupation"] == 1:
+            elif _json_msg["stateOccupation"] == 1:
                 print("[!] {} is done charging.".format(self.id))
                 common.send_json_message(self.sock, _json_msg)
 
@@ -91,7 +91,7 @@ class ClientThread(threading.Thread):
 
             self.interpret_message(json_msg)
 
-            if json_msg["stateOcupation"] == 0:
+            if json_msg["stateOccupation"] == 0:
                 break
 
         print("[X] Closing socket: {} {}".format(self.client_ip, self.client_port))
