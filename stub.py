@@ -92,7 +92,9 @@ class Stub:
     """
 
     def __init__(self, ID, battery=default_battery):
-        self.identifier = int(str(datetime.datetime.now().year) + str(ID).zfill(2))
+        # self.identifier = int(str(datetime.datetime.now().year) + str(ID).zfill(2))
+        # Actually, hardcode the year
+        self.identifier = int(str(2020) + str(ID).zfill(2))
         self.battery = battery
 
         self.charging = False
