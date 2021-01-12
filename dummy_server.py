@@ -35,7 +35,7 @@ class ClientThread(threading.Thread):
             self.id = _json_msg["chargerID"]
         elif self.id != _json_msg["chargerID"]:
             print(
-                "[X] ERROR: Different charger id on the same socket? Shouldn't happen! Got {}, expected {}.",
+                "[X] ERROR: Different charger id, same socket? Not good! Got {}, expected {}.",
                 _json_msg["chargerID"],
                 self.id,
             )

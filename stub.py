@@ -13,6 +13,8 @@ import datetime
 
 import common
 
+RECEIVE_TIMEOUT = 999
+
 
 parser = argparse.ArgumentParser(
     prog="stub", description="Simulate a simple EV charger."
@@ -161,7 +163,7 @@ class Stub:
             )
             return
 
-        if _json_msg["chargingMode"] == 0:  # TODO: Might be 0
+        if _json_msg["chargingMode"] == 0:
             self.start_charging_at(_json_msg["maxPower"], _json_msg["chargingMode"])
 
         # TODO: Handle fast charging
@@ -190,7 +192,7 @@ class Stub:
         common.send_json_message(self.sock, _json_data)
 
         try:
-            _json_data = common.receive_json_message(self.sock, timeout=1)
+            _json_data = common.receive_json_message(self.sock, timeout=RECEIVE_TIMEOUT)
             self.interpret_message(_json_data)
         except TimeoutError:
             print("[!] Server may be down? It's not replying.")
@@ -257,7 +259,7 @@ stub0 = Stub(args.id)
 TIME_SPEED = 30
 TIME_SLEEP = 1
 TIME_ELAPSED = 0
-TIME_UNTIL_DISCONNECT = 60
+TIME_UNTIL_DISCONNECT = 9999
 
 while True:
     try:
