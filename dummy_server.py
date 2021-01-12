@@ -91,8 +91,8 @@ class ClientThread(threading.Thread):
 
             self.interpret_message(json_msg)
 
-            if json_msg["stateOccupation"] == 0:
-                break
+            # if json_msg["stateOccupation"] == 0:
+            #    break
 
         print("[X] Closing socket: {} {}".format(self.client_ip, self.client_port))
         self.sock.shutdown(socket.SHUT_RDWR)

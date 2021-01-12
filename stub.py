@@ -39,8 +39,10 @@ class Battery:
         self.current_battery = perc * cap
 
         self.falloff_point = falloff
-        self.min_power = power_bounds[0]
-        self.max_power = power_bounds[1]
+
+        # power must be converted to W
+        self.min_power = power_bounds[0] * 1000
+        self.max_power = power_bounds[1] * 1000
 
     def calculate_max_power_intake(self):
         """
@@ -61,8 +63,12 @@ class Battery:
         speeds decay linearly until a minimum
         charging speed at 100%. Must also take
         into account the available power.
+
+        delta_t in seconds and power_intake in Watts
         """
-        self.current_battery += power_intake * delta_t
+
+        # Convert to kWh from Ws
+        self.current_battery += (power_intake / 1000) * (delta_t / 3600)
         self.perc = self.current_battery / self.battery_capacity
 
         if self.perc >= 1:
@@ -123,7 +129,8 @@ class Stub:
 
     def charge(self, delta_t):
         """
-        Simulate charging the battery
+        Simulate charging the battery,
+        handles battery being full
         """
 
         self.calculate_power_intake()
@@ -212,7 +219,7 @@ class Stub:
         stopped due to a manual disconnect
         """
         json_data = {
-            "module": "stub",
+            "module": "disconnected",
             "chargerID": self.identifier,
             "stateOccupation": 0,
             "newConnection": 0,
@@ -277,14 +284,18 @@ while True:
         stub0.send_charge_data()
     except Exception as e:
         print("[!] Server must be down: exiting!", e)
-        stub0.raw_disconnect()
         break
 
-    time.sleep(TIME_SLEEP)
-    TIME_ELAPSED += TIME_SLEEP
+    try:
+        time.sleep(TIME_SLEEP)
+        TIME_ELAPSED += TIME_SLEEP
+    except Exception:
+        print("[!] Exception received: exiting!")
+        break
 
-    stub0.charge(TIME_SLEEP * TIME_SPEED / 3600)
+    stub0.charge(TIME_SLEEP * TIME_SPEED)  # in seconds
 
     if TIME_ELAPSED > TIME_UNTIL_DISCONNECT:
-        stub0.disconnect()
         break
+
+stub0.disconnect()
