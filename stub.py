@@ -78,7 +78,7 @@ class Battery:
             self.current_battery = self.battery_capacity
 
     def __repr__(self):
-        return "({:.2f}/{:.2f}kWh [{:.2f}%])".format(
+        return "({:.2f}/{:.2f}Wh [{:.2f}%])".format(
             self.current_battery, self.battery_capacity, self.perc * 100
         )
 
@@ -249,7 +249,7 @@ class Stub:
             "Stub no. {}: ".format(self.identifier)
             + str(self.battery)
             + (
-                " Charging @{:.2f}kWh".format(self.power_intake)
+                " Charging @{:.2f}Wh".format(self.power_intake)
                 if self.charging
                 else " Idle"
             )
