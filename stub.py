@@ -78,12 +78,12 @@ class Battery:
             self.current_battery = self.battery_capacity
 
     def __repr__(self):
-        return "({:.2f}/{:.2f}Wh [{:.2f}%])".format(
+        return "({:.2f}/{:.2f}kWh [{:.2f}%])".format(
             self.current_battery, self.battery_capacity, self.perc * 100
         )
 
 
-default_battery = Battery(cap=6.1, perc=0.2, falloff=0.7, power_bounds=(5, 62.5))
+default_battery = Battery(cap=60, perc=0.0, falloff=1, power_bounds=(5, 62.5))
 
 
 class Stub:
@@ -136,6 +136,8 @@ class Stub:
         Simulate charging the battery,
         handles battery being full
         """
+        if not self.charging:
+            return
 
         self.calculate_power_intake()
         self.battery.charge(delta_t, self.power_intake)
@@ -157,6 +159,10 @@ class Stub:
         common.send_json_message(self.sock, base_packet)
 
     def interpret_message(self, _json_msg):
+        if _json_msg["module"] == "disconnected":
+            print("[!] Disconnect coming from server.")
+            raise Exception
+
         if _json_msg["chargerID"] != self.identifier:
             print(
                 "[!] Is this packet for us? I'm not Stub no. {}, I'm no. {}. Ignoring.".format(
@@ -249,7 +255,7 @@ class Stub:
             "Stub no. {}: ".format(self.identifier)
             + str(self.battery)
             + (
-                " Charging @{:.2f}Wh".format(self.power_intake)
+                " Charging @{:.2f}kW".format(self.power_intake / 1000)
                 if self.charging
                 else " Idle"
             )
@@ -258,10 +264,15 @@ class Stub:
 
 stub0 = Stub(args.id)
 
-TIME_SPEED = 30
+# Simulation speed modifier
+# 3600 means 1s of simulation = 1h of charging
+# a large time speed value translates into
+# a large simulation step, degrading simulation
+# quality
+TIME_SPEED = 3600
 TIME_SLEEP = 1
 TIME_ELAPSED = 0
-TIME_UNTIL_DISCONNECT = 9999
+TIME_UNTIL_DISCONNECT = 5
 
 while True:
     try:
@@ -292,7 +303,8 @@ while True:
 
     try:
         time.sleep(TIME_SLEEP)
-        TIME_ELAPSED += TIME_SLEEP
+        if not stub0.charging:
+            TIME_ELAPSED += TIME_SLEEP
     except Exception:
         print("[!] Exception received: exiting!")
         break

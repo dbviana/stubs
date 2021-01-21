@@ -50,20 +50,20 @@ class ClientThread(threading.Thread):
             )
 
             _json_msg["chargingMode"] = 0
-            _json_msg["maxPower"] = 60
+            _json_msg["maxPower"] = 60000
 
             common.send_json_message(self.sock, _json_msg)
             print(
-                "[<] Authorizing {} to charging a maximum of {}kWh.".format(
-                    self.id, _json_msg["maxPower"]
+                "[<] Authorizing {} to charging a maximum of {}kW.".format(
+                    self.id, _json_msg["maxPower"] / 1000
                 )
             )
             return
 
         if _json_msg["chargingMode"] == 0:
             print(
-                "[>] {} is charging at {:.2f}kWh (from the {:.2f}kWh available to it).".format(
-                    self.id, _json_msg["instPower"], _json_msg["maxPower"]
+                "[>] {} is charging at {:.2f}kW (from the {:.2f}kW available to it).".format(
+                    self.id, _json_msg["instPower"] / 1000, _json_msg["maxPower"] / 1000
                 )
             )
 
