@@ -29,6 +29,10 @@ args = parser.parse_args()
 print(args.server_addr)
 
 
+class DisconnectException(Exception):
+    pass
+
+
 class Battery:
     """
     Encapsulates the characteristics and
@@ -159,9 +163,9 @@ class Stub:
         common.send_json_message(self.sock, base_packet)
 
     def interpret_message(self, _json_msg):
-        if _json_msg["module"] == "disconnected":
-            print("[!] Disconnect coming from server.")
-            raise Exception
+        # if _json_msg["module"] == "disconnected":
+        #    print("[!] Disconnect coming from server.")
+        #    raise DisconnectException
 
         if _json_msg["chargerID"] != self.identifier:
             print(
